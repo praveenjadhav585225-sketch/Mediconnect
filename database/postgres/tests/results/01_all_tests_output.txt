@@ -1,0 +1,202 @@
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+=== CONSTRAINT / INTEGRITY TEST RESULTS ===
+ test_id |                             description                              |  expected   |   got   | result 
+---------+----------------------------------------------------------------------+-------------+---------+--------
+ T01     | Duplicate email rejected (UNIQUE)                                    | 23505       | 23505   | PASS
+ T02     | Invalid role rejected (CHECK)                                        | 23514       | 23514   | PASS
+ T03     | Upper-case email rejected (CHECK)                                    | 23514       | 23514   | PASS
+ T04     | Malformed email rejected (CHECK)                                     | 23514       | 23514   | PASS
+ T05     | Plain-text-length password rejected (CHECK)                          | 23514       | 23514   | PASS
+ T06     | Patient without a user rejected (FK)                                 | 23503       | 23503   | PASS
+ T07     | Future date of birth rejected (CHECK)                                | 23514       | 23514   | PASS
+ T08     | Invalid phone number rejected (CHECK)                                | 23514       | 23514   | PASS
+ T09     | Duplicate licence number rejected (UNIQUE)                           | 23505       | 23505   | PASS
+ T10     | Negative consultation fee rejected (CHECK)                           | 23514       | 23514   | PASS
+ T11     | Unknown specialization rejected (FK)                                 | 23503       | 23503   | PASS
+ T12     | Availability end <= start rejected (CHECK)                           | 23514       | 23514   | PASS
+ T13     | Overlapping availability rule rejected (EXCLUDE)                     | 23P01       | 23P01   | PASS
+ T14     | Adjacent, non-overlapping availability accepted                      | success     | success | PASS
+ T15     | Duplicate slot for same doctor and start rejected                    | 23505|23P01 | 23505   | PASS
+ T16     | Partially overlapping slot rejected (EXCLUDE)                        | 23P01       | 23P01   | PASS
+ T17     | Slot end before start rejected (CHECK)                               | 23514       | 23514   | PASS
+ T18     | Double booking of a booked slot rejected (partial UNIQUE)            | 23505       | 23505   | PASS
+ T19     | Appointment with a slot of ANOTHER doctor rejected (composite FK)    | 23503       | 23503   | PASS
+ T20     | Appointment linked to ANOTHER patient's case rejected (composite FK) | 23503       | 23503   | PASS
+ T21     | CANCELLED without cancelled_at rejected (CHECK)                      | 23514       | 23514   | PASS
+ T22     | Invalid appointment status rejected (CHECK)                          | 23514       | 23514   | PASS
+ T23     | Cancel then REBOOK the same slot is allowed                          | success     | success | PASS
+ T24     | COMPLETED consultation without ended_at rejected (CHECK)             | 23514       | 23514   | PASS
+ T25     | Second consultation for the same appointment rejected (UNIQUE)       | 23505       | 23505   | PASS
+ T26     | Rating 6 rejected (CHECK)                                            | 23514       | 23514   | PASS
+ T27     | Valid rating 5 accepted                                              | success     | success | PASS
+ T28     | Second review for same consultation rejected (UNIQUE)                | 23505       | 23505   | PASS
+ T29     | Review for a missing consultation rejected (FK)                      | 23503       | 23503   | PASS
+ T30     | Invalid case severity rejected (CHECK)                               | 23514       | 23514   | PASS
+ T31     | Duplicate Mongo detail id rejected (UNIQUE)                          | 23505       | 23505   | PASS
+ T32     | Embedding with wrong dimension (3, not 384) rejected (vector type)   | 22000       | 22000   | PASS
+ T33     | Embedding with malformed text hash rejected (CHECK)                  | 23514       | 23514   | PASS
+ T34     | Embedding for a missing case rejected (FK)                           | 23503       | 23503   | PASS
+ T35     | Valid 384-d embedding accepted                                       | success     | success | PASS
+ T36     | Match log: case matched with itself rejected (CHECK)                 | 23514       | 23514   | PASS
+ T37     | Match log: similarity score 1.5 rejected (CHECK)                     | 23514       | 23514   | PASS
+ T38     | Deleting a user cascades to the patient profile                      | success     | success | PASS
+ T39     | App role CANNOT update the audit log (privilege)                     | 42501       | 42501   | PASS
+ T40     | App role CAN read and write normal tables                            | success     | success | PASS
+(40 rows)
+ passed | failed | total 
+--------+--------+-------
+     40 |      0 |    40
+=== C1: INSERT user + patient, SELECT it back ===
+ full_name |           email            |  role   
+-----------+----------------------------+---------
+ Crud Test | crud.test@mediconnect.test | PATIENT
+=== C2: UPDATE then verify ===
+     phone     
+---------------
+ +919000011111
+=== C3: DELETE the user, the patient row must go too (ON DELETE CASCADE) ===
+ patient_rows_left 
+-------------------
+                 0
+=== C4: JOIN + GROUP BY + ORDER BY: appointments per doctor and status ===
+     doctor     |  specialization  | completed | cancelled | total 
+----------------+------------------+-----------+-----------+-------
+ Arjun Menon    | Neurology        |         2 |         1 |     5
+ Deepa Kulkarni | Gastroenterology |         2 |         0 |     5
+ Meera Iyer     | Cardiology       |         2 |         0 |     5
+ Sunita Patil   | Orthopedics      |         2 |         0 |     5
+ Vikram Rao     | Pulmonology      |         2 |         1 |     5
+(5 rows)
+=== C5: HAVING: doctors whose average rating is 4 or more with at least 2 reviews ===
+   full_name    | reviews | avg_rating 
+----------------+---------+------------
+ Deepa Kulkarni |       2 |       4.50
+ Arjun Menon    |       2 |       4.00
+(2 rows)
+=== C6: Subquery: patients who have a submitted case but no appointment yet (expect 0 after seed) ===
+ patients_with_case_but_no_appointment 
+---------------------------------------
+                                     0
+=== C7: Full-text doctor search ranked by relevance (uses the GIN index) ===
+  full_name  | rank  
+-------------+-------
+ Meera Iyer  | 0.243
+ Rajesh Nair | 0.243
+(2 rows)
+=== I1: expected indexes exist (expect 0 missing) ===
+ missing_indexes 
+-----------------
+               0
+=== I2: index types in use (B-tree, partial, GIN, HNSW) ===
+        indexname        |       kind       
+-------------------------+------------------
+ idx_appt_patient        | B-tree
+ idx_cases_matching_pool | B-tree (partial)
+ idx_slots_available     | B-tree (partial)
+ uq_appt_active_slot     | B-tree (partial)
+ idx_doctors_search      | GIN
+ idx_embeddings_hnsw     | HNSW
+(6 rows)
+=== I3: EXPLAIN, GIN full-text index ===
+                         QUERY PLAN                          
+-------------------------------------------------------------
+ Bitmap Heap Scan on doctors
+   Recheck Cond: (search_vector @@ '''heart'''::tsquery)
+   ->  Bitmap Index Scan on idx_doctors_search
+         Index Cond: (search_vector @@ '''heart'''::tsquery)
+(4 rows)
+=== I4: EXPLAIN, partial index for available slots ===
+                         QUERY PLAN                          
+-------------------------------------------------------------
+ Index Scan using idx_slots_available on time_slots
+   Index Cond: ((doctor_id = $0) AND (start_ts > now()))
+   InitPlan 1 (returns $0)
+     ->  Limit
+           ->  Index Only Scan using doctors_pkey on doctors
+(5 rows)
+=== I5: EXPLAIN, partial index for the matching pool ===
+                        QUERY PLAN                         
+-----------------------------------------------------------
+ Index Scan using idx_cases_matching_pool on medical_cases
+   Index Cond: (specialization_id = 1)
+(2 rows)
+ setseed 
+---------
+=== V1: rows inserted into case_embeddings (expect 70) ===
+ embeddings | dims_min | dims_max 
+------------+----------+----------
+         70 |      384 |      384
+=== V2: top-5 similar cases for the active CARDIOLOGY case (pool: consented + RESOLVED/CLOSED only) ===
+ specialization |                  title                  | similarity 
+----------------+-----------------------------------------+------------
+ Cardiology     | Chest discomfort at rest for 90 days    |      0.945
+ Cardiology     | Racing heartbeat for 10 days            |      0.945
+ Cardiology     | Chest tightness on exertion for 45 days |      0.944
+ Cardiology     | Dizziness on standing for 45 days       |      0.943
+ Cardiology     | Racing heartbeat for 45 days            |      0.943
+(5 rows)
+=== V3: automated check, top-5 neighbours of EVERY active case are in the same specialization ===
+ neighbours_checked | same_specialization | result 
+--------------------+---------------------+--------
+                 30 |                  30 | PASS
+=== V4: what the matching pool excludes (consent + status filter) ===
+ resolved_or_closed | in_matching_pool | excluded_no_consent | excluded_not_finished 
+--------------------+------------------+---------------------+-----------------------
+                 64 |               54 |                  10 |                     6
+=== V5: similarity threshold (>= 0.60) keeps only close matches ===
+ matches_above_threshold 
+-------------------------
+                       7
+=== V6: EXPLAIN, is the HNSW index used? (seq scan disabled only because the table has just 70 rows) ===
+                          QUERY PLAN                           
+---------------------------------------------------------------
+ Limit
+   InitPlan 1 (returns $0)
+     ->  Limit
+           ->  Seq Scan on case_embeddings case_embeddings_1
+   ->  Index Scan using idx_embeddings_hnsw on case_embeddings
+         Order By: (embedding <=> $0)
+(6 rows)
+=== after ROLLBACK: embeddings in table (expect 0) ===
+ count 
+-------
+     0

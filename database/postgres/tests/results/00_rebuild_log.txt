@@ -1,0 +1,20 @@
+psql:reset.sql:3: NOTICE:  drop cascades to 16 other objects
+DETAIL:  drop cascades to extension vector
+drop cascades to extension btree_gist
+drop cascades to type timerange
+drop cascades to table users
+drop cascades to table patients
+drop cascades to table specializations
+drop cascades to table doctors
+drop cascades to table availability_rules
+drop cascades to table time_slots
+drop cascades to table medical_cases
+drop cascades to table case_embeddings
+drop cascades to table appointments
+drop cascades to table consultations
+drop cascades to table reviews
+drop cascades to table case_match_log
+drop cascades to table audit_log
+Schema reset.
+Migrations applied.
+Seed loaded.

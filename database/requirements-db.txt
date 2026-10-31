@@ -1,0 +1,4 @@
+# Extra Python packages for the database scripts (install inside embedding-service\.venv)
+psycopg[binary]>=3.2
+pymongo>=4.8
+python-dotenv>=1.0
