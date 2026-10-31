@@ -3,7 +3,10 @@
 -- NOT MiniLM embeddings. It proves cosine search, filtering, the HNSW index and the dimension check work.
 -- Real semantic quality is measured later with embed_cases.py (real model). Everything is rolled back.
 \pset pager off
+\echo '=== embeddings stored BEFORE this test (left untouched) ==='
+SELECT count(*) AS embeddings_before FROM case_embeddings;
 BEGIN;
+DELETE FROM case_embeddings;      -- test uses its own vectors; rolled back at the end, your real embeddings are safe
 SELECT setseed(0.42);
 
 INSERT INTO case_embeddings (case_id, embedding, text_hash)
@@ -62,5 +65,5 @@ SELECT case_id FROM case_embeddings
 ORDER BY embedding <=> (SELECT embedding FROM case_embeddings LIMIT 1) LIMIT 5;
 
 ROLLBACK;
-\echo '=== after ROLLBACK: embeddings in table (expect 0) ==='
+\echo '=== after ROLLBACK: must equal embeddings_before ==='
 SELECT count(*) FROM case_embeddings;

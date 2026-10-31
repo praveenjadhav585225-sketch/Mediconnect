@@ -126,9 +126,11 @@ SELECT pg_temp.expect('A23','Audit log never contains password hashes',
 
 -- ---------------- find_similar_cases (TEST-ONLY synthetic vectors, one block of dimensions per specialization)
 SELECT pg_temp.expect('A24','Matching refused until the case has an embedding',
-  format($$SELECT * FROM find_similar_cases(%L,%L)$$, (SELECT cardio_doc FROM fx),(SELECT cardio_case FROM fx)), 'MC010');
+  format($t$DO $b$ BEGIN DELETE FROM case_embeddings WHERE case_id=%L; PERFORM * FROM find_similar_cases(%L,%L); END $b$$t$,
+  (SELECT cardio_case FROM fx),(SELECT cardio_doc FROM fx),(SELECT cardio_case FROM fx)), 'MC010');
 SELECT pg_temp.expect('A25','Matching returns 5 same-specialization cases and writes the match log',
   format($t$DO $b$ DECLARE n int; same int; BEGIN
+     DELETE FROM case_embeddings;
      INSERT INTO case_embeddings (case_id, embedding, text_hash)
      SELECT c.case_id, (SELECT array_agg((CASE WHEN g BETWEEN (c.specialization_id-1)*40 AND (c.specialization_id-1)*40+39 THEN 1.0 ELSE 0.0 END + random()*0.35)::real ORDER BY g) FROM generate_series(0,383) g)::vector,
             md5(c.case_id::text) || md5(c.case_id::text || 'x') FROM medical_cases c WHERE c.status <> 'DRAFT_INCOMPLETE';
@@ -137,8 +139,8 @@ SELECT pg_temp.expect('A25','Matching returns 5 same-specialization cases and wr
      IF (SELECT count(*) FROM case_match_log WHERE query_case_id=%L) <> 5 THEN RAISE EXCEPTION 'match log not written'; END IF; END $b$$t$,
   (SELECT cardio_doc FROM fx),(SELECT cardio_case FROM fx),(SELECT cardio_case FROM fx)), 'success');
 SELECT pg_temp.expect('A26','A doctor with no appointment for the case cannot run matching',
-  format($t$DO $b$ BEGIN INSERT INTO case_embeddings (case_id, embedding, text_hash) SELECT %L, array_fill(0.1::real, ARRAY[384])::vector, repeat('a',64);
-     PERFORM * FROM find_similar_cases(%L, %L); END $b$$t$, (SELECT cardio_case FROM fx),(SELECT other_doc FROM fx),(SELECT cardio_case FROM fx)), 'MC007');
+  format($t$DO $b$ BEGIN DELETE FROM case_embeddings WHERE case_id=%L; INSERT INTO case_embeddings (case_id, embedding, text_hash) SELECT %L, array_fill(0.1::real, ARRAY[384])::vector, repeat('a',64);
+     PERFORM * FROM find_similar_cases(%L, %L); END $b$$t$, (SELECT cardio_case FROM fx),(SELECT cardio_case FROM fx),(SELECT other_doc FROM fx),(SELECT cardio_case FROM fx)), 'MC007');
 SELECT pg_temp.expect('A27','Matching output exposes only id, specialization and similarity',
   $$SELECT 1 FROM (SELECT parameter_name FROM information_schema.parameters WHERE specific_name LIKE 'find_similar_cases%' AND parameter_mode='OUT') o HAVING array_agg(parameter_name::text ORDER BY parameter_name::text) = ARRAY['matched_case_id','similarity','specialization']$$, 'success');
 SELECT pg_temp.expect('A28','p_k = 0 is rejected',
