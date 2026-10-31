@@ -2,6 +2,9 @@
 -- so the database is left unchanged. "success" means the statement was ACCEPTED (then rolled back).
 \set ON_ERROR_STOP off
 \pset pager off
+DROP TABLE IF EXISTS pg_temp.test_results;
+DROP TABLE IF EXISTS pg_temp.fx;
+DROP FUNCTION IF EXISTS pg_temp.expect(text,text,text,text);
 CREATE TEMP TABLE test_results (n serial, test_id text, description text, expected text, got text, result text);
 
 CREATE FUNCTION pg_temp.expect(p_id text, p_desc text, p_stmt text, p_expected text) RETURNS void AS $f$

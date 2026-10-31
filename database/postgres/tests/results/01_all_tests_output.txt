@@ -1,3 +1,6 @@
+psql:tests/test_constraints.sql:5: NOTICE:  schema "pg_temp" does not exist, skipping
+psql:tests/test_constraints.sql:6: NOTICE:  schema "pg_temp" does not exist, skipping
+psql:tests/test_constraints.sql:7: NOTICE:  schema "pg_temp" does not exist, skipping
  expect 
  expect 
  expect 
@@ -159,6 +162,77 @@
  Index Scan using idx_cases_matching_pool on medical_cases
    Index Cond: (specialization_id = 1)
 (2 rows)
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+ expect 
+=== DAY 3 ADVANCED FEATURE TEST RESULTS ===
+ test_id |                                     description                                     | expected |   got   | result 
+---------+-------------------------------------------------------------------------------------+----------+---------+--------
+ A01     | generate_slots adds slots for a verified doctor                                     | success  | success | PASS
+ A02     | generate_slots is idempotent (second run adds 0)                                    | success  | success | PASS
+ A03     | generate_slots refuses an unverified doctor                                         | MC002    | MC002   | PASS
+ A04     | generate_slots refuses 100 days                                                     | 22023    | 22023   | PASS
+ A05     | book_appointment succeeds, slot becomes BOOKED (trigger) and the booking is audited | success  | success | PASS
+ A06     | Booking an already booked slot is rejected                                          | MC001    | MC001   | PASS
+ A07     | Unverified doctors cannot receive bookings (function)                               | MC002    | MC002   | PASS
+ A08     | Unverified doctors cannot receive bookings (direct INSERT, trigger)                 | MC002    | MC002   | PASS
+ A09     | Booking a slot in the past is rejected                                              | MC003    | MC003   | PASS
+ A10     | A patient cannot hold two appointments at the same time                             | MC008    | MC008   | PASS
+ A11     | A deactivated account cannot book                                                   | MC006    | MC006   | PASS
+ A12     | A case of another patient cannot be attached                                        | MC007    | MC007   | PASS
+ A13     | Owner cancels: status CANCELLED and the slot is released                            | success  | success | PASS
+ A14     | Another patient cannot cancel it                                                    | MC007    | MC007   | PASS
+ A15     | Admin can cancel any appointment                                                    | success  | success | PASS
+ A16     | Completed appointments cannot be cancelled (procedure)                              | MC004    | MC004   | PASS
+ A17     | Completed appointments cannot be cancelled even by direct UPDATE (trigger)          | MC004    | MC004   | PASS
+ A18     | Cancelling twice is rejected                                                        | MC004    | MC004   | PASS
+ A19     | A released slot can be rebooked by someone else                                     | success  | success | PASS
+ A20     | Consultation: start, complete, appointment becomes COMPLETED                        | success  | success | PASS
+ A21     | Only the appointment's own doctor can start a consultation                          | MC007    | MC007   | PASS
+ A22     | Review blocked before completion, allowed after                                     | success  | success | PASS
+ A23     | Audit log never contains password hashes                                            | success  | success | PASS
+ A24     | Matching refused until the case has an embedding                                    | MC010    | MC010   | PASS
+ A25     | Matching returns 5 same-specialization cases and writes the match log               | success  | success | PASS
+ A26     | A doctor with no appointment for the case cannot run matching                       | MC007    | MC007   | PASS
+ A27     | Matching output exposes only id, specialization and similarity                      | success  | success | PASS
+ A28     | p_k = 0 is rejected                                                                 | 22023    | 22023   | PASS
+ A29     | App role can read every view and the materialized view                              | success  | success | PASS
+ A30     | Admin case view exposes no title, narrative or patient identity                     | success  | success | PASS
+ A31     | Doctor directory lists only VERIFIED doctors (expect 10)                            | success  | success | PASS
+ A32     | Full-text search through the view finds the dermatologist                           | success  | success | PASS
+(32 rows)
+ passed | failed | total 
+--------+--------+-------
+     32 |      0 |    32
  setseed 
 ---------
 === V1: rows inserted into case_embeddings (expect 70) ===

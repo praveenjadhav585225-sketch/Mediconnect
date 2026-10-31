@@ -7,4 +7,7 @@
 \ir migrations/004_indexes.sql
 \ir migrations/005_alter_and_drop_examples.sql
 \ir migrations/006_app_role.sql
+\ir migrations/007_functions_procedures.sql
+\ir migrations/008_triggers.sql
+\ir migrations/009_views.sql
 \echo 'Migrations applied.'

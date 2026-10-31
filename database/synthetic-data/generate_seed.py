@@ -394,8 +394,9 @@ COMMIT;
     "-- Loads all synthetic data (run AFTER run_all.sql).\n"
     "--   psql -U postgres -d mediconnect -f database/postgres/run_seed.sql\n"
     "\\set ON_ERROR_STOP on\n"
+    "SET mediconnect.skip_audit = on;   -- synthetic loading should not flood the audit log\n"
     "\\ir seed/01_reference_and_users.sql\n\\ir seed/02_cases.sql\n\\ir seed/03_slots_appointments.sql\n"
-    "\\echo 'Seed loaded.'\n")
+    "RESET mediconnect.skip_audit;\n\\echo 'Seed loaded.'\n")
 
 # ------------------------------------------------------------------ MongoDB seed
 def D(dt):

@@ -1,0 +1,18 @@
+
+=== Scenario 1: 9 patients race for ONE slot ===
+outcomes: {'OK': 1, 'MC001': 8}
+[PASS] Exactly one booking wins  ->  1 success, 8 rejected with MC001 (slot taken)
+[PASS] Database holds exactly one active appointment for the slot  ->  active=1, slot status=BOOKED
+latency: winner 57.0 ms, slowest loser 84.5 ms
+
+=== Scenario 2: ONE patient races for TWO overlapping slots (different doctors, same time) ===
+outcomes: {'OK': 1, 'MC008': 1}
+[PASS] Patient ends up with one appointment, other attempt gets MC008  ->  {'OK': 1, 'MC008': 1}
+
+=== Scenario 3: 7 different patients book 7 DIFFERENT slots at once ===
+outcomes: {'OK': 7}
+[PASS] Independent bookings do not block each other  ->  {'OK': 7}
+latency: median 33.5 ms, max 40.9 ms
+[PASS] Cleanup returns every test slot to AVAILABLE  ->  0 slots not released
+
+5 of 5 checks passed

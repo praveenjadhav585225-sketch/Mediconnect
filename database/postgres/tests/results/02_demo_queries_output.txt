@@ -1,0 +1,137 @@
+-- NOTE: section 7 below ran on RANDOM test vectors (embed_cases.py --fake) so only its timing/plan shape is meaningful here.
+Pager usage is off.
+##### 1. TRANSACTION + STORED FUNCTION/PROCEDURE: full appointment lifecycle (rolled back at the end)
+BEGIN
+              set_config              
+--------------------------------------
+ 55ea6240-554c-5779-94cb-af94d22b7e86
+(1 row)
+
+              set_config              
+--------------------------------------
+ adbc643f-107a-5c7f-8384-4f26434f6ff5
+(1 row)
+
+              set_config              
+--------------------------------------
+ bda31463-713b-4b39-b7ea-43e3da2cc1a0
+(1 row)
+
+after book_appointment: appointment BOOKED, slot BOOKED (set by trigger)
+ appointment |  slot  
+-------------+--------
+ BOOKED      | BOOKED
+(1 row)
+
+booking the same slot again fails (the ERROR below is the expected result):
+SAVEPOINT
+psql:database/postgres/tests/demo_queries.sql:14: ERROR:  Slot is not available
+CONTEXT:  PL/pgSQL function book_appointment(uuid,uuid,uuid,text) line 13 at RAISE
+ROLLBACK
+CALL
+after cancel_appointment: appointment CANCELLED, slot released to AVAILABLE
+ appointment |   slot    
+-------------+-----------
+ CANCELLED   | AVAILABLE
+(1 row)
+
+the audit trigger recorded every state change:
+  table_name  | action | old_status | new_status 
+--------------+--------+------------+------------
+ appointments | INSERT |            | BOOKED
+ appointments | UPDATE | BOOKED     | CANCELLED
+(2 rows)
+
+ROLLBACK
+
+##### 2. VIEWS: doctor directory (verified doctors, rating, next free slot)
+   full_name    |  specialization  | review_count | avg_rating |  next_slot   
+----------------+------------------+--------------+------------+--------------
+ Rajesh Nair    | Cardiology       |            1 |       5.00 | 02 Nov 09:00
+ Sunita Patil   | Orthopedics      |            1 |       5.00 | 02 Nov 09:45
+ Deepa Kulkarni | Gastroenterology |            2 |       4.50 | 02 Nov 09:15
+ Arjun Menon    | Neurology        |            2 |       4.00 | 02 Nov 09:30
+ Mahesh Joshi   | General Medicine |            1 |       4.00 | 02 Nov 09:00
+(5 rows)
+
+##### 3. JOIN + GROUP BY + HAVING + SUBQUERY: doctors busier than the average doctor
+   full_name    |  specialization  | total_appointments | cancellation_rate_pct 
+----------------+------------------+--------------------+-----------------------
+ Arjun Menon    | Neurology        |                  5 |                  20.0
+ Sunita Patil   | Orthopedics      |                  5 |                   0.0
+ Vikram Rao     | Pulmonology      |                  5 |                  20.0
+ Meera Iyer     | Cardiology       |                  5 |                   0.0
+ Deepa Kulkarni | Gastroenterology |                  5 |                   0.0
+ Priya Desai    | General Medicine |                  4 |                   0.0
+ Kavya Reddy    | Dermatology      |                  4 |                   0.0
+ Mahesh Joshi   | General Medicine |                  4 |                  25.0
+ Anil Shetty    | Endocrinology    |                  4 |                  25.0
+(9 rows)
+
+##### 4. MATERIALIZED VIEW: monthly dashboard numbers
+ refresh_dashboard_stats 
+-------------------------
+ 
+(1 row)
+
+  month  | appointments | completed | cancelled | unique_patients 
+---------+--------------+-----------+-----------+-----------------
+ 2026-11 |           14 |         0 |         0 |              14
+ 2026-10 |           30 |        20 |         5 |              30
+(2 rows)
+
+
+##### 5. EXPLAIN ANALYZE: full-text doctor search (GIN index; seq scan disabled only because the table is tiny)
+BEGIN
+SET
+                                       QUERY PLAN                                        
+-----------------------------------------------------------------------------------------
+ Bitmap Heap Scan on doctors (actual time=0.013..0.014 rows=2 loops=1)
+   Recheck Cond: (search_vector @@ '''heart'''::tsquery)
+   Heap Blocks: exact=1
+   ->  Bitmap Index Scan on idx_doctors_search (actual time=0.011..0.011 rows=4 loops=1)
+         Index Cond: (search_vector @@ '''heart'''::tsquery)
+ Planning Time: 0.401 ms
+ Execution Time: 0.023 ms
+(7 rows)
+
+##### 6. EXPLAIN ANALYZE: available slots for one doctor (partial B-tree index)
+                                             QUERY PLAN                                              
+-----------------------------------------------------------------------------------------------------
+ Limit (actual time=0.016..0.018 rows=10 loops=1)
+   InitPlan 1 (returns $0)
+     ->  Index Scan using uq_doctors_license on doctors (actual time=0.008..0.008 rows=1 loops=1)
+           Index Cond: (license_number = 'KMC-2010-10001'::text)
+   ->  Index Scan using idx_slots_available on time_slots (actual time=0.015..0.017 rows=10 loops=1)
+         Index Cond: ((doctor_id = $0) AND (start_ts > now()))
+ Planning Time: 0.072 ms
+ Execution Time: 0.026 ms
+(8 rows)
+
+ROLLBACK
+##### 7. EXPLAIN ANALYZE: vector similarity (HNSW). Needs embeddings: run  python database/scripts/embed_cases.py  first
+ embeddings_loaded 
+-------------------
+                70
+(1 row)
+
+BEGIN
+SET
+                                                    QUERY PLAN                                                    
+------------------------------------------------------------------------------------------------------------------
+ Limit (actual time=76.090..76.098 rows=5 loops=1)
+   InitPlan 1 (returns $0)
+     ->  Limit (actual time=0.031..0.032 rows=1 loops=1)
+           ->  Seq Scan on case_embeddings (actual time=0.030..0.030 rows=1 loops=1)
+   ->  Nested Loop (actual time=0.232..0.239 rows=5 loops=1)
+         ->  Index Scan using idx_embeddings_hnsw on case_embeddings e (actual time=0.211..0.214 rows=11 loops=1)
+               Order By: (embedding <=> $0)
+         ->  Index Scan using uq_cases_id_patient on medical_cases c (actual time=0.001..0.001 rows=0 loops=11)
+               Index Cond: (case_id = e.case_id)
+               Filter: (consent_for_matching AND (status = ANY ('{RESOLVED,CLOSED}'::text[])))
+               Rows Removed by Filter: 1
+ Planning Time: 0.218 ms
+ Execution Time: 86.701 ms
+(13 rows)
+
+ROLLBACK

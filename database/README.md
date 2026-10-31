@@ -64,3 +64,36 @@ python database\scripts\check_connections.py      # PostgreSQL + pgvector + Mong
 - **No double-booked doctor time** via `EXCLUDE USING gist` on slot time ranges; overlapping weekly rules are blocked the same way.
 - **Cross-database links** are plain ids (`medical_cases.mongo_detail_id`, `consultations.notes_doc_id`). No text is duplicated.
 - **Known limitation**: PostgreSQL and MongoDB cannot share one transaction. The Day 6 saga (write order + `DRAFT_INCOMPLETE` + cleanup) covers it.
+
+---
+
+# Day 3: Advanced DBMS features
+
+Apply to a database that already has Stage 1 loaded (no data is touched):
+
+```powershell
+psql -U postgres -d mediconnect -f database/postgres/run_day3.sql
+psql -U postgres -d mediconnect -f database/postgres/tests/test_advanced.sql
+python database\postgres\tests\concurrency_test.py
+psql -U postgres -d mediconnect -f database/postgres/tests/demo_queries.sql
+```
+
+| Feature | Where |
+|---|---|
+| Transactions + row locking | `book_appointment` (locks patient row, then slot row, always in that order) |
+| Stored functions / procedures | `generate_slots`, `book_appointment`, `start_consultation`, `find_similar_cases` (functions); `cancel_appointment`, `complete_consultation` (procedures) |
+| Triggers | audit logging on 6 tables, slot-status sync, legal status transitions, doctor-must-be-verified, review-after-completion, `updated_at` |
+| Views | `v_doctor_directory`, `v_appointment_details`, `v_doctor_workload`, `v_daily_appointments`, `v_case_trends`, `v_admin_case_metadata` |
+| Materialized view | `mv_monthly_stats` + `refresh_dashboard_stats()` |
+| Indexes | B-tree, partial, GIN (full-text), HNSW (vector cosine) |
+| Vector similarity | `find_similar_cases(doctor, case, k, min_score, same_specialization)` |
+
+**Error codes** raised by the routines (the API maps these to HTTP responses):
+`MC001` slot taken, `MC002` doctor not verified, `MC003` slot in the past, `MC004` illegal state change,
+`MC005` not found, `MC006` account deactivated, `MC007` not allowed, `MC008` patient time clash,
+`MC009` review before completion, `MC010` case has no embedding yet.
+
+**Audit actor:** the routines call `set_actor(user_id)` so audit rows record who acted. API code that updates tables directly
+should run `SELECT set_actor('<user uuid>')` first inside the same transaction.
+
+**Time zone:** open every application connection with `SET timezone = 'Asia/Kolkata'`, because slot generation converts local times.
