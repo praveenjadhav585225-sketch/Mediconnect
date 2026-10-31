@@ -1,0 +1,11 @@
+node_modules/
+.next/
+.env
+.env.local
+.venv/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+.vscode/settings.json
+.cache/
