@@ -218,6 +218,30 @@ GET /api/admin/dashboard
 
 These results are from the local development environment.
 
+## H. Day 6 integrated workflow
+
+Start PostgreSQL, MongoDB, and the embedding service before starting Next.js.
+The Day 6 case workflow writes the MongoDB case document first, requests a
+local 384-dimensional embedding, and then commits the PostgreSQL case header
+and pgvector row in one transaction. If the PostgreSQL transaction fails, the
+MongoDB document is removed; a failed embedding request prevents either
+database write.
+
+Additional verification commands:
+
+```powershell
+python database\scripts\verify_integration.py
+python database\scripts\verify_saga.py
+npm --prefix web run typecheck
+npm --prefix web run build
+```
+
+Use `/register` for a synthetic patient account, then test login, appointment
+booking/cancellation, and case submission from the patient portal. Doctors can
+request anonymised similar resolved cases from their consultation page. Matching
+is informational only and requires the case's consent flag; no real patient
+data should be entered.
+
 ## H. GitHub submission
 
 From the project root:

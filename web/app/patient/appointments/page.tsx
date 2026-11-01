@@ -2,6 +2,8 @@ import ProtectedPortal from "@/components/ProtectedPortal";
 import { pool } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import AppointmentBookingForm from "@/components/AppointmentBookingForm";
+import AppointmentCancelButton from "@/components/AppointmentCancelButton";
 
 export const dynamic = "force-dynamic";
 
@@ -22,10 +24,11 @@ export default async function Appointments() {
     <ProtectedPortal role="PATIENT">
       <main className="container">
         <h1>My appointments</h1>
+        <AppointmentBookingForm />
         <div className="card tablewrap">
           <table>
             <thead>
-              <tr><th>Doctor</th><th>Specialization</th><th>Start</th><th>Status</th><th>Reason</th></tr>
+              <tr><th>Doctor</th><th>Specialization</th><th>Start</th><th>Status</th><th>Reason</th><th>Action</th></tr>
             </thead>
             <tbody>
               {q.rows.map(a => (
@@ -35,6 +38,7 @@ export default async function Appointments() {
                   <td>{a.start_ts ? new Date(a.start_ts).toLocaleString() : "—"}</td>
                   <td>{a.status}</td>
                   <td>{a.reason || "—"}</td>
+                  <td><AppointmentCancelButton appointmentId={a.appointment_id} status={a.status} /></td>
                 </tr>
               ))}
             </tbody>

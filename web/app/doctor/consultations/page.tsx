@@ -2,6 +2,7 @@ import ProtectedPortal from "@/components/ProtectedPortal";
 import { pool } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import CaseMatches from "@/components/CaseMatches";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function Consultations() {
 
   const q = await pool.query(
     `SELECT c.consultation_id, c.status, c.started_at, c.ended_at,
-            c.follow_up_required, p.full_name
+            c.follow_up_required, p.full_name, a.case_id
      FROM consultations c
      JOIN appointments a ON a.appointment_id = c.appointment_id
      JOIN doctors d ON d.doctor_id = a.doctor_id
@@ -29,7 +30,7 @@ export default async function Consultations() {
         <div className="card tablewrap">
           <table>
             <thead>
-              <tr><th>Patient</th><th>Status</th><th>Started</th><th>Ended</th><th>Follow-up</th></tr>
+              <tr><th>Patient</th><th>Status</th><th>Started</th><th>Ended</th><th>Follow-up</th><th>Matching</th></tr>
             </thead>
             <tbody>
               {q.rows.map(c => (
@@ -39,6 +40,7 @@ export default async function Consultations() {
                   <td>{new Date(c.started_at).toLocaleString()}</td>
                   <td>{c.ended_at ? new Date(c.ended_at).toLocaleString() : "—"}</td>
                   <td>{c.follow_up_required ? "Yes" : "No"}</td>
+                  <td>{c.case_id ? <CaseMatches caseId={c.case_id} /> : "No case"}</td>
                 </tr>
               ))}
             </tbody>

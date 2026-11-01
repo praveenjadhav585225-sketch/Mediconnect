@@ -2,6 +2,7 @@ import ProtectedPortal from "@/components/ProtectedPortal";
 import { pool } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import CaseSubmissionForm from "@/components/CaseSubmissionForm";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export default async function Cases() {
       <main className="container">
         <h1>My medical cases</h1>
         <p className="notice">Case details are private. Similar-case matching requires explicit consent.</p>
+        <CaseSubmissionForm />
         <div className="card tablewrap">
           <table>
             <thead>
