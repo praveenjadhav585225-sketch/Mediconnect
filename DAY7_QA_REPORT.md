@@ -64,6 +64,12 @@ Browser screenshots were captured during this QA run for:
 
 The screenshots show synthetic names and aggregate/demo values only.
 
+Saved submission images:
+
+- [Patient dashboard](docs/patient-dashboard.png)
+- [Doctor dashboard](docs/doctor-dashboard.png)
+- [Admin dashboard](docs/admin-dashboard.png)
+
 ## Consultation workflow scope
 
 The database contains consultation start and completion routines, and the
