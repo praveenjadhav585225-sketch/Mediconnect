@@ -1,0 +1,49 @@
+import ProtectedPortal from "@/components/ProtectedPortal";
+import { pool } from "@/lib/db";
+import { readSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+
+export default async function Doctor() {
+  const u = await readSession();
+
+  if (!u) redirect("/login");
+  if (u.role !== "DOCTOR") redirect(`/${u.role.toLowerCase()}`);
+
+  const q = await pool.query(
+    `SELECT full_name, specialization, total_appointments, completed,
+            upcoming, cancellation_rate_pct
+     FROM v_doctor_workload
+     WHERE doctor_id = (
+       SELECT doctor_id FROM doctors WHERE user_id = $1
+     )`,
+    [u.userId]
+  );
+
+  const d = q.rows[0];
+
+  return (
+    <ProtectedPortal role="DOCTOR">
+      <main className="container">
+        <h1>Doctor dashboard</h1>
+        <p className="muted">
+          Welcome, {d?.full_name || u.email} · {d?.specialization || "Doctor"}
+        </p>
+
+        <section className="grid">
+          {[
+            ["Total appointments", d?.total_appointments ?? 0],
+            ["Completed", d?.completed ?? 0],
+            ["Upcoming", d?.upcoming ?? 0],
+          ].map(([k, v]) => (
+            <div className="card" key={String(k)}>
+              {k}
+              <div className="metric">{v}</div>
+            </div>
+          ))}
+        </section>
+      </main>
+    </ProtectedPortal>
+  );
+}

@@ -1,0 +1,47 @@
+import ProtectedPortal from "@/components/ProtectedPortal";
+import { pool } from "@/lib/db";
+import { readSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+
+export default async function Appointments() {
+  const u = await readSession();
+  if (!u) redirect("/login");
+  if (u.role !== "PATIENT") redirect(`/${u.role.toLowerCase()}`);
+
+  const q = await pool.query(
+    `SELECT appointment_id, status, start_ts, doctor_name, specialization, reason
+     FROM v_appointment_details
+     WHERE patient_id = (SELECT patient_id FROM patients WHERE user_id = $1)
+     ORDER BY start_ts DESC LIMIT 100`,
+    [u.userId]
+  );
+
+  return (
+    <ProtectedPortal role="PATIENT">
+      <main className="container">
+        <h1>My appointments</h1>
+        <div className="card tablewrap">
+          <table>
+            <thead>
+              <tr><th>Doctor</th><th>Specialization</th><th>Start</th><th>Status</th><th>Reason</th></tr>
+            </thead>
+            <tbody>
+              {q.rows.map(a => (
+                <tr key={a.appointment_id}>
+                  <td>{a.doctor_name}</td>
+                  <td>{a.specialization}</td>
+                  <td>{a.start_ts ? new Date(a.start_ts).toLocaleString() : "—"}</td>
+                  <td>{a.status}</td>
+                  <td>{a.reason || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!q.rows.length && <p className="empty">No appointments yet.</p>}
+        </div>
+      </main>
+    </ProtectedPortal>
+  );
+}

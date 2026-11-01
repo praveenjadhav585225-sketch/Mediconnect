@@ -1,0 +1,2 @@
+import {ReactNode} from "react";import {redirect} from "next/navigation";import {readSession,UserRole} from "@/lib/auth";import Portal from "./Portal";
+export default async function ProtectedPortal({role,children}:{role:UserRole;children:ReactNode}){const u=await readSession();if(!u)redirect("/login");if(u.role!==role)redirect(`/${u.role.toLowerCase()}`);return <Portal role={role}>{children}</Portal>}

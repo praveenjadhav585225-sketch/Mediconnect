@@ -1,10 +1,4 @@
 import type { ReactNode } from "react";
-
-export const metadata = {
-  title: "MediConnect API",
-  description: "MediConnect backend API scaffold",
-};
-
-export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="en"><body>{children}</body></html>;
-}
+import "./globals.css";
+export const metadata={title:"MediConnect",description:"Telemedicine and semantic historical case matching platform"};
+export default function RootLayout({children}:{children:ReactNode}){return <html lang="en"><body>{children}</body></html>}

@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {requireRole} from "@/lib/auth";import {pool} from "@/lib/db";export const runtime="nodejs";
+export async function GET(){const a=await requireRole(["DOCTOR"]);if(a.response)return a.response;const q=await pool.query(`SELECT * FROM v_doctor_workload WHERE doctor_id=(SELECT doctor_id FROM doctors WHERE user_id=$1)`,[a.user!.userId]);if(!q.rowCount)return NextResponse.json({error:"Doctor profile not found"},{status:404});return NextResponse.json(q.rows[0])}

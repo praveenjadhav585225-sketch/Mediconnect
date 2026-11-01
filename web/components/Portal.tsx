@@ -1,0 +1,5 @@
+"use client";
+import {ReactNode} from "react";import Link from "next/link";import {useRouter} from "next/navigation";
+export default function Portal({role,children}:{role:string;children:ReactNode}){const router=useRouter();async function logout(){await fetch("/api/auth/logout",{method:"POST"});router.replace("/login");router.refresh()}
+const nav:Record<string,[string,string][]>={PATIENT:[["Overview","/patient"],["Doctors","/patient/doctors"],["Appointments","/patient/appointments"],["Cases","/patient/cases"]],DOCTOR:[["Overview","/doctor"],["Appointments","/doctor/appointments"],["Consultations","/doctor/consultations"]],ADMIN:[["Overview","/admin"],["Users","/admin/users"],["Doctors","/admin/doctors"],["Appointments","/admin/appointments"]]};
+return <div className="shell"><header className="topbar"><Link className="brand" href="/">MediConnect</Link><nav>{(nav[role]||[]).map(([t,u])=><Link key={u} href={u}>{t}</Link>)}<button className="logout" onClick={logout}>Logout</button></nav></header>{children}</div>}
